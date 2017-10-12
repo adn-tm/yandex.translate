@@ -89,7 +89,7 @@ YandexTranslator.prototype.request = function request(command, params) {
 
       res.on('end', function() {
         var body = Buffer.concat(chunks).toString();
-        console.log(body);
+        // console.log(body);
         parseJSON(body).then(function(data) {
           if (res.statusCode >= 300) {
             var err = new Error(res.statusMessage);
