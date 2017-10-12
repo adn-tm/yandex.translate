@@ -1,6 +1,6 @@
 var https = require('https');
 var url = require('url');
-
+var querystring = require('querystring');
 /**
  * @link http://api.yandex.com/key/keyslist.xml Get a free API key on this page.
  *
@@ -63,13 +63,23 @@ function parseJSON(json) {
  */
 YandexTranslator.prototype.request = function request(command, params) {
   params.key = this.key;
+  if (params.options) params.options=1;
+  var post_data = querystring.stringify(params);
+  params.text = undefined;
   return new Promise(function(resolve, reject) {
-    https.get(url.format({
-      query: params,
-      protocol: 'https:',
+    console.log(querystring.stringify(params));
+    var post_req=https.request({
       hostname: 'translate.yandex.net',
-      pathname: '/api/v1.5/tr.json/' + command,
-    }), function(res) {
+      protocol: 'https:',
+      port: 443,
+      path: '/api/v1.5/tr.json/' + command,
+      // query: querystring.stringify(params),
+      method:"POST",
+      headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'Content-Length': Buffer.byteLength(post_data)
+      }
+    }, function(res) {
       var chunks = [];
 
       res.on('data', function(chunk) {
@@ -79,6 +89,7 @@ YandexTranslator.prototype.request = function request(command, params) {
 
       res.on('end', function() {
         var body = Buffer.concat(chunks).toString();
+        console.log(body);
         parseJSON(body).then(function(data) {
           if (res.statusCode >= 300) {
             var err = new Error(res.statusMessage);
@@ -90,6 +101,10 @@ YandexTranslator.prototype.request = function request(command, params) {
         }).catch(reject);
       });
     }).on('error', reject);
+
+    post_req.write(post_data);
+    post_req.end();
+
   });
 };
 
